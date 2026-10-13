@@ -1,73 +1,21 @@
--- ZUNO ENGINE - TCS ULTIMATE (Library Externa Compatível com Xeno)
+-- ZUNO ENGINE - TCS (Menu Nativo Restaurado)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 local ZunoScript = {
     Active = true,
-    Reach = 45,
+    Reach = 45,             -- Reach padrão amplo
     AutoFollow = false,
     AutoBall = false,
     AutoTeleport = false,
-    FollowSpeed = 25
+    FollowSpeed = 22        -- Velocidade suave para o AutoFollow
 }
 
--- Carrega a Library de Interface Externa (Bypassa bloqueios de GUI do Xeno)
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
-local Window = Rayfield:CreateWindow({
-   Name = "⚡ ZUNO ENGINE - TCS PRO",
-   LoadingTitle = "A carregar Zuno Engine...",
-   LoadingSubtitle = "por Rafael",
-   ConfigurationSaving = { Enabled = false },
-   KeySystem = false
-})
-
-local MainTab = Window:CreateTab("Principal", 4483362458)
-
--- Toggles de Funções
-MainTab:CreateToggle({
-   Name = "AutoFollow (Seguir Bola)",
-   CurrentValue = false,
-   Flag = "AutoFollowFlag",
-   Callback = function(Value)
-      ZunoScript.AutoFollow = Value
-   end,
-})
-
-MainTab:CreateToggle({
-   Name = "AutoBall (Ímã)",
-   CurrentValue = false,
-   Flag = "AutoBallFlag",
-   Callback = function(Value)
-      ZunoScript.AutoBall = Value
-   end,
-})
-
-MainTab:CreateToggle({
-   Name = "Teleport para a Bola",
-   CurrentValue = false,
-   Flag = "TeleportFlag",
-   Callback = function(Value)
-      ZunoScript.AutoTeleport = Value
-   end,
-})
-
--- Ajuste de Reach (Slider / Input)
-MainTab:CreateSlider({
-   Name = "Alcance do Reach (Studs)",
-   Range = {10, 150},
-   Increment = 5,
-   Suffix = "Studs",
-   CurrentValue = 45,
-   Flag = "ReachSlider",
-   Callback = function(Value)
-      ZunoScript.Reach = Value
-   end,
-})
-
--- Busca avançada da bola no TCS
+-- Procura a bola no TCS sem falhar
 local function FindBall()
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
@@ -82,7 +30,157 @@ local function FindBall()
     return nil
 end
 
--- Loop principal de físicas
+-- Limpa menus antigos para não sobrepor
+if CoreGui:FindFirstChild("ZunoCoreGui") then
+    CoreGui.ZunoCoreGui:Destroy()
+end
+if LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("ZunoCoreGui") then
+    LocalPlayer.PlayerGui.ZunoCoreGui:Destroy()
+end
+
+-- Criando a Interface (Mesma estrutura visual que funcionou)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ZunoCoreGui"
+ScreenGui.ResetOnSpawn = false
+
+pcall(function()
+    ScreenGui.Parent = CoreGui
+end)
+if not ScreenGui.Parent then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+-- Janela Principal
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 240, 0, 320)
+MainFrame.Position = UDim2.new(0.08, 0, 0.25, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 8)
+Corner.Parent = MainFrame
+
+-- Barra de Título
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 38)
+Title.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+Title.Text = "⚡ ZUNO ENGINE - TCS"
+Title.TextColor3 = Color3.fromRGB(0, 230, 255)
+Title.TextSize = 14
+Title.Font = Enum.Font.SourceSansBold
+Title.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 8)
+TitleCorner.Parent = Title
+
+-- Botão: AutoFollow
+local BtnFollow = Instance.new("TextButton")
+BtnFollow.Size = UDim2.new(0.9, 0, 0, 32)
+BtnFollow.Position = UDim2.new(0.05, 0, 0.15, 0)
+BtnFollow.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+BtnFollow.Text = "AutoFollow: DESLIGADO"
+BtnFollow.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnFollow.Font = Enum.Font.SourceSansBold
+BtnFollow.TextSize = 13
+BtnFollow.Parent = MainFrame
+
+BtnFollow.MouseButton1Click:Connect(function()
+    ZunoScript.AutoFollow = not ZunoScript.AutoFollow
+    BtnFollow.BackgroundColor3 = ZunoScript.AutoFollow and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
+    BtnFollow.Text = "AutoFollow: " .. (ZunoScript.AutoFollow and "LIGADO" or "DESLIGADO")
+end)
+
+-- Botão: AutoBall (Ímã Ampliado)
+local BtnBall = Instance.new("TextButton")
+BtnBall.Size = UDim2.new(0.9, 0, 0, 32)
+BtnBall.Position = UDim2.new(0.05, 0, 0.28, 0)
+BtnBall.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+BtnBall.Text = "AutoBall (Ímã): DESLIGADO"
+BtnBall.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnBall.Font = Enum.Font.SourceSansBold
+BtnBall.TextSize = 13
+BtnBall.Parent = MainFrame
+
+BtnBall.MouseButton1Click:Connect(function()
+    ZunoScript.AutoBall = not ZunoScript.AutoBall
+    BtnBall.BackgroundColor3 = ZunoScript.AutoBall and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
+    BtnBall.Text = "AutoBall (Ímã): " .. (ZunoScript.AutoBall and "LIGADO" or "DESLIGADO")
+end)
+
+-- Botão: Teleport Ball
+local BtnTeleport = Instance.new("TextButton")
+BtnTeleport.Size = UDim2.new(0.9, 0, 0, 32)
+BtnTeleport.Position = UDim2.new(0.05, 0, 0.41, 0)
+BtnTeleport.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+BtnTeleport.Text = "Teleport Ball: DESLIGADO"
+BtnTeleport.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnTeleport.Font = Enum.Font.SourceSansBold
+BtnTeleport.TextSize = 13
+BtnTeleport.Parent = MainFrame
+
+BtnTeleport.MouseButton1Click:Connect(function()
+    ZunoScript.AutoTeleport = not ZunoScript.AutoTeleport
+    BtnTeleport.BackgroundColor3 = ZunoScript.AutoTeleport and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
+    BtnTeleport.Text = "Teleport Ball: " .. (ZunoScript.AutoTeleport and "LIGADO" or "DESLIGADO")
+end)
+
+-- Reach Label
+local ReachLabel = Instance.new("TextLabel")
+ReachLabel.Size = UDim2.new(0.9, 0, 0, 20)
+ReachLabel.Position = UDim2.new(0.05, 0, 0.55, 0)
+ReachLabel.BackgroundTransparency = 1
+ReachLabel.Text = "Alcance do Reach (Studs):"
+ReachLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+ReachLabel.Font = Enum.Font.SourceSans
+ReachLabel.TextSize = 13
+ReachLabel.Parent = MainFrame
+
+-- Caixa do Reach (Digitar o Valor)
+local ReachBox = Instance.new("TextBox")
+ReachBox.Size = UDim2.new(0.9, 0, 0, 28)
+ReachBox.Position = UDim2.new(0.05, 0, 0.63, 0)
+ReachBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+ReachBox.Text = tostring(ZunoScript.Reach)
+ReachBox.TextColor3 = Color3.fromRGB(0, 230, 255)
+ReachBox.Font = Enum.Font.SourceSansBold
+ReachBox.TextSize = 14
+ReachBox.Parent = MainFrame
+
+ReachBox.FocusLost:Connect(function()
+    local val = tonumber(ReachBox.Text)
+    if val then
+        ZunoScript.Reach = val
+        print("⚡ [ZUNO] Reach atualizado para:", val)
+    else
+        ReachBox.Text = tostring(ZunoScript.Reach)
+    end
+end)
+
+-- Ajuda / Tecla de Atalho
+local HelpLabel = Instance.new("TextLabel")
+HelpLabel.Size = UDim2.new(0.9, 0, 0, 25)
+HelpLabel.Position = UDim2.new(0.05, 0, 0.88, 0)
+HelpLabel.BackgroundTransparency = 1
+HelpLabel.Text = "Pressiona 'INSERT' para Abrir/Fechar"
+HelpLabel.TextColor3 = Color3.fromRGB(130, 130, 150)
+HelpLabel.Font = Enum.Font.SourceSansItalic
+HelpLabel.TextSize = 12
+HelpLabel.Parent = MainFrame
+
+-- Tecla INSERT para esconder/mostrar a janela
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+-- Loop Principal de Físicas
 RunService.RenderStepped:Connect(function(dt)
     if not ZunoScript.Active then return end
     
@@ -95,19 +193,21 @@ RunService.RenderStepped:Connect(function(dt)
     if ball then
         local distance = (ball.Position - rootPart.Position).Magnitude
         
+        -- Aplica as funções se a bola estiver dentro do Reach definido na caixa
         if distance <= ZunoScript.Reach then
-            -- AutoFollow suave
+            
+            -- AutoFollow suave e cadenciado
             if ZunoScript.AutoFollow and not ZunoScript.AutoTeleport then
                 local targetPos = Vector3.new(ball.Position.X, rootPart.Position.Y, ball.Position.Z)
                 rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(rootPart.Position, targetPos) + (ball.Position - rootPart.Position).Unit * math.min(distance, ZunoScript.FollowSpeed * dt), 0.25)
             end
 
-            -- Teleport Direto
+            -- Teleport direto para a bola
             if ZunoScript.AutoTeleport then
                 rootPart.CFrame = ball.CFrame * CFrame.new(0, 3, 0)
             end
             
-            -- AutoBall (Ímã baseado no Reach)
+            -- AutoBall (Puxa e fixa a bola no pé)
             if ZunoScript.AutoBall then
                 pcall(function()
                     ball.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2.5)
@@ -118,4 +218,4 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
-print("🚀 [ZUNO ENGINE] Rayfield Library Injetada com Sucesso!")
+print("🚀 [ZUNO ENGINE] Menu Nativo TCS Restaurado com Sucesso!")
