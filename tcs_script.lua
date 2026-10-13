@@ -1,28 +1,36 @@
 -- ==========================================================
--- ZUNO ENGINE - TCS ULTIMATE (Painel Direto no PlayerGui)
+-- ZUNO ENGINE - TCS ULTIMATE (Painel Otimizado)
 -- ==========================================================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
--- Espera o jogador e o PlayerGui carregarem completamente
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+-- Tenta pegar o PlayerGui com segurança
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
+if not PlayerGui then
+    warn("⚡ [ZUNO] PlayerGui não encontrado!")
+    return
+end
 
 -- Configurações das Funções
 local Config = {
     Active = true,
-    Reach = 45,             -- Reach padrão
+    Reach = 45,
     AutoFollow = false,
     AutoBall = false,
     AutoTeleport = false,
-    FollowSpeed = 22        -- Velocidade suave para o AutoFollow
+    FollowSpeed = 22
 }
 
--- 1. Destrói qualquer versão antiga do menu no PlayerGui
+-- 1. Destrói qualquer versão antiga do menu
 if PlayerGui:FindFirstChild("ZunoTcsMainGui") then
     PlayerGui.ZunoTcsMainGui:Destroy()
+end
+if CoreGui:FindFirstChild("ZunoTcsMainGui") then
+    CoreGui.ZunoTcsMainGui:Destroy()
 end
 
 -- 2. Função de busca da bola no TCS
@@ -40,21 +48,28 @@ local function GetBall()
     return nil
 end
 
--- 3. Criação da Interface Gráfica Garantida
+-- 3. Criação da Interface Gráfica
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ZunoTcsMainGui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
+-- Tenta injetar no CoreGui para burlar proteções do jogo (se o executor suportar), senão vai pro PlayerGui
+local success = pcall(function()
+    ScreenGui.Parent = CoreGui
+end)
+if not success then
+    ScreenGui.Parent = PlayerGui
+end
 
--- Janela Principal
+-- Janela Principal (Centralizada para garantir que apareça)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 240, 0, 320)
-MainFrame.Position = UDim2.new(0.08, 0, 0.25, 0)
+MainFrame.Position = UDim2.new(0.5, -120, 0.4, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.Visible = true
 MainFrame.Parent = ScreenGui
 
 local Corner = Instance.new("UICorner")
@@ -117,7 +132,7 @@ ReachLabel.Font = Enum.Font.SourceSans
 ReachLabel.TextSize = 13
 ReachLabel.Parent = MainFrame
 
--- ReachBox (Caixa de Entrada para alterar o valor do Reach)
+-- ReachBox
 local ReachBox = Instance.new("TextBox")
 ReachBox.Size = UDim2.new(0.9, 0, 0, 28)
 ReachBox.Position = UDim2.new(0.05, 0, 0.63, 0)
@@ -172,21 +187,16 @@ RunService.RenderStepped:Connect(function(dt)
     if ball then
         local distance = (ball.Position - rootPart.Position).Magnitude
         
-        -- Executa as funções dentro do raio definido na ReachBox
         if distance <= Config.Reach then
-            
-            -- AutoFollow Suave
             if Config.AutoFollow and not Config.AutoTeleport then
                 local targetPos = Vector3.new(ball.Position.X, rootPart.Position.Y, ball.Position.Z)
                 rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(rootPart.Position, targetPos) + (ball.Position - rootPart.Position).Unit * math.min(distance, Config.FollowSpeed * dt), 0.25)
             end
 
-            -- Teleport Direto para a Bola
             if Config.AutoTeleport then
                 rootPart.CFrame = ball.CFrame * CFrame.new(0, 3, 0)
             end
             
-            -- AutoBall (Ímã na Bola)
             if Config.AutoBall then
                 pcall(function()
                     ball.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2.5)
@@ -197,4 +207,4 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
-print("🚀 [ZUNO ENGINE] Injetado com Sucesso no PlayerGui!")
+print("🚀 [ZUNO ENGINE] Injetado com Sucesso e Menu Centralizado!")
