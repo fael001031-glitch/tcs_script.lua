@@ -1,4 +1,4 @@
--- ZUNO ENGINE - TCS Atualizado (AutoBall Maior, AutoFollow Suave e TP)
+-- ZUNO ENGINE - TCS com Reach Real e Funcional
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -8,14 +8,14 @@ local LocalPlayer = Players.LocalPlayer
 
 local ZunoScript = {
     Active = true,
-    Reach = 35,             -- Reach aumentado para maior alcance
+    Reach = 40,             -- Reach inicial robusto
     AutoFollow = false,
     AutoBall = false,
     AutoTeleport = false,
-    FollowSpeed = 25        -- Velocidade do AutoFollow reduzida para ficar mais suave e natural
+    FollowSpeed = 22        -- Velocidade suave para o AutoFollow
 }
 
--- Função de busca da bola no TCS
+-- Função para encontrar a bola no TCS
 local function FindBall()
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
@@ -64,9 +64,9 @@ Corner.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 38)
 Title.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
-Title.Text = "⚡ ZUNO ENGINE - TCS PRO"
+Title.Text = "⚡ ZUNO ENGINE - TCS ULTIMATE"
 Title.TextColor3 = Color3.fromRGB(0, 230, 255)
-Title.TextSize = 15
+Title.TextSize = 14
 Title.Font = Enum.Font.SourceSansBold
 Title.Parent = MainFrame
 
@@ -91,12 +91,12 @@ BtnFollow.MouseButton1Click:Connect(function()
     BtnFollow.Text = "AutoFollow: " .. (ZunoScript.AutoFollow and "LIGADO" or "DESLIGADO")
 end)
 
--- Botão AutoBall (Maior e mais forte)
+-- Botão AutoBall
 local BtnBall = Instance.new("TextButton")
 BtnBall.Size = UDim2.new(0.9, 0, 0, 32)
 BtnBall.Position = UDim2.new(0.05, 0, 0.29, 0)
 BtnBall.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-BtnBall.Text = "AutoBall (Maior): DESLIGADO"
+BtnBall.Text = "AutoBall (Ímã): DESLIGADO"
 BtnBall.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnBall.Font = Enum.Font.SourceSansBold
 BtnBall.TextSize = 13
@@ -105,7 +105,7 @@ BtnBall.Parent = MainFrame
 BtnBall.MouseButton1Click:Connect(function()
     ZunoScript.AutoBall = not ZunoScript.AutoBall
     BtnBall.BackgroundColor3 = ZunoScript.AutoBall and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
-    BtnBall.Text = "AutoBall (Maior): " .. (ZunoScript.AutoBall and "LIGADO" or "DESLIGADO")
+    BtnBall.Text = "AutoBall (Ímã): " .. (ZunoScript.AutoBall and "LIGADO" or "DESLIGADO")
 end)
 
 -- Botão Teleport
@@ -125,7 +125,7 @@ BtnTeleport.MouseButton1Click:Connect(function()
     BtnTeleport.Text = "Teleport Ball: " .. (ZunoScript.AutoTeleport and "LIGADO" or "DESLIGADO")
 end)
 
--- Reach Input
+-- Reach Input (Agora funcional e dinâmico)
 local ReachLabel = Instance.new("TextLabel")
 ReachLabel.Size = UDim2.new(0.9, 0, 0, 20)
 ReachLabel.Position = UDim2.new(0.05, 0, 0.56, 0)
@@ -148,7 +148,12 @@ ReachBox.Parent = MainFrame
 
 ReachBox.FocusLost:Connect(function()
     local val = tonumber(ReachBox.Text)
-    if val then ZunoScript.Reach = val else ReachBox.Text = tostring(ZunoScript.Reach) end
+    if val then
+        ZunoScript.Reach = val
+        print("⚡ [ZUNO] Reach atualizado para:", val)
+    else
+        ReachBox.Text = tostring(ZunoScript.Reach)
+    end
 end)
 
 local HelpLabel = Instance.new("TextLabel")
@@ -180,27 +185,29 @@ RunService.RenderStepped:Connect(function(dt)
     if ball then
         local distance = (ball.Position - rootPart.Position).Magnitude
         
+        -- O Reach agora comanda o raio de ação de todas as funções
         if distance <= ZunoScript.Reach then
-            -- AutoFollow mais suave e cadenciado
+            
+            -- AutoFollow suave
             if ZunoScript.AutoFollow and not ZunoScript.AutoTeleport then
                 local targetPos = Vector3.new(ball.Position.X, rootPart.Position.Y, ball.Position.Z)
-                rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(rootPart.Position, targetPos) + (ball.Position - rootPart.Position).Unit * math.min(distance, ZunoScript.FollowSpeed * dt), 0.2)
+                rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(rootPart.Position, targetPos) + (ball.Position - rootPart.Position).Unit * math.min(distance, ZunoScript.FollowSpeed * dt), 0.25)
             end
 
-            -- Teleport Direto ativo
+            -- Teleport Direto
             if ZunoScript.AutoTeleport then
                 rootPart.CFrame = ball.CFrame * CFrame.new(0, 3, 0)
             end
             
-            -- AutoBall Ampliado (Puxa a bola com mais força para o domínio)
+            -- AutoBall (Ímã de longo alcance baseado no Reach)
             if ZunoScript.AutoBall then
                 pcall(function()
                     ball.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2.5)
-                    ball.AssemblyLinearVelocity = Vector3.new(0, 20, 0)
+                    ball.AssemblyLinearVelocity = Vector3.new(0, 10, 0)
                 end)
             end
         end
     end
 end)
 
-print("🚀 [ZUNO ENGINE] Atualizado com Sucesso!")
+print("🚀 [ZUNO ENGINE] Atualizado com Reach Funcional!")
