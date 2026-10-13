@@ -1,4 +1,4 @@
--- ZUNO ENGINE - TCS com Indicador Visual de Reach
+-- ZUNO ENGINE - TCS FIX PAINEL & REACH (Xeno)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -8,14 +8,25 @@ local LocalPlayer = Players.LocalPlayer
 
 local ZunoScript = {
     Active = true,
-    Reach = 45,             -- Reach inicial otimizado
+    Reach = 45,
     AutoFollow = false,
     AutoBall = false,
     AutoTeleport = false,
     FollowSpeed = 25
 }
 
--- Função para encontrar a bola no TCS
+-- Limpeza rigorosa de interfaces antigas
+local function CleanupOldUI()
+    if CoreGui:FindFirstChild("ZunoCoreGui") then
+        CoreGui.ZunoCoreGui:Destroy()
+    end
+    if LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("ZunoCoreGui") then
+        LocalPlayer.PlayerGui.ZunoCoreGui:Destroy()
+    end
+end
+CleanupOldUI()
+
+-- Função de busca da bola no TCS
 local function FindBall()
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
@@ -30,21 +41,17 @@ local function FindBall()
     return nil
 end
 
--- Destrói menus antigos
-if CoreGui:FindFirstChild("ZunoCoreGui") then
-    CoreGui.ZunoCoreGui:Destroy()
-end
-
--- Interface no CoreGui
+-- Criação da Interface Ultracompatível
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ZunoCoreGui"
 ScreenGui.ResetOnSpawn = false
 
-pcall(function()
+local success = pcall(function()
     ScreenGui.Parent = CoreGui
 end)
-if not ScreenGui.Parent then
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+if not success or not ScreenGui.Parent then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui", 5)
 end
 
 local MainFrame = Instance.new("Frame")
@@ -64,7 +71,7 @@ Corner.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 38)
 Title.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
-Title.Text = "⚡ ZUNO ENGINE - TCS REACH"
+Title.Text = "⚡ ZUNO ENGINE - TCS FIX"
 Title.TextColor3 = Color3.fromRGB(0, 230, 255)
 Title.TextSize = 14
 Title.Font = Enum.Font.SourceSansBold
@@ -125,7 +132,7 @@ BtnTeleport.MouseButton1Click:Connect(function()
     BtnTeleport.Text = "Teleport Ball: " .. (ZunoScript.AutoTeleport and "LIGADO" or "DESLIGADO")
 end)
 
--- Reach Label com Indicador de Distância Ativa
+-- Reach Label
 local ReachLabel = Instance.new("TextLabel")
 ReachLabel.Size = UDim2.new(0.9, 0, 0, 20)
 ReachLabel.Position = UDim2.new(0.05, 0, 0.52, 0)
@@ -152,18 +159,17 @@ ReachBox.FocusLost:Connect(function()
     if val then
         ZunoScript.Reach = val
         ReachLabel.Text = "Reach Atual: " .. ZunoScript.Reach .. " Studs"
-        print("⚡ [ZUNO] Reach atualizado para:", val)
     else
         ReachBox.Text = tostring(ZunoScript.Reach)
     end
 end)
 
--- Label de Status em Tempo Real (Mostra a distância exata até à bola)
+-- Status da Distância em Tempo Real
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(0.9, 0, 0, 30)
 StatusLabel.Position = UDim2.new(0.05, 0, 0.72, 0)
 StatusLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
-StatusLabel.Text = "Distância à Bola: A procurar..."
+StatusLabel.Text = "A procurar bola..."
 StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 StatusLabel.Font = Enum.Font.SourceSans
 StatusLabel.TextSize = 12
@@ -177,7 +183,7 @@ local HelpLabel = Instance.new("TextLabel")
 HelpLabel.Size = UDim2.new(0.9, 0, 0, 20)
 HelpLabel.Position = UDim2.new(0.05, 0, 0.89, 0)
 HelpLabel.BackgroundTransparency = 1
-HelpLabel.Text = "Pressiona 'INSERT' para Fechar"
+HelpLabel.Text = "Pressiona 'INSERT' para Fechar/Abrir"
 HelpLabel.TextColor3 = Color3.fromRGB(130, 130, 150)
 HelpLabel.Font = Enum.Font.SourceSansItalic
 HelpLabel.TextSize = 11
@@ -189,7 +195,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Loop principal com atualização da distância em tempo real
+-- Loop principal
 RunService.RenderStepped:Connect(function(dt)
     if not ZunoScript.Active then return end
     
@@ -204,18 +210,15 @@ RunService.RenderStepped:Connect(function(dt)
         StatusLabel.Text = string.Format("Distância à Bola: %.1f Studs", distance)
         
         if distance <= ZunoScript.Reach then
-            -- AutoFollow suave
             if ZunoScript.AutoFollow and not ZunoScript.AutoTeleport then
                 local targetPos = Vector3.new(ball.Position.X, rootPart.Position.Y, ball.Position.Z)
                 rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(rootPart.Position, targetPos) + (ball.Position - rootPart.Position).Unit * math.min(distance, ZunoScript.FollowSpeed * dt), 0.25)
             end
 
-            -- Teleport Direto
             if ZunoScript.AutoTeleport then
                 rootPart.CFrame = ball.CFrame * CFrame.new(0, 3, 0)
             end
             
-            -- AutoBall (Ímã baseado no Reach ativo)
             if ZunoScript.AutoBall then
                 pcall(function()
                     ball.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2.5)
@@ -228,4 +231,4 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
-print("🚀 [ZUNO ENGINE] Atualizado com Indicador de Distância!")
+print("🚀 [ZUNO ENGINE] Painel Restaurado com Sucesso!")
