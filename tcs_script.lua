@@ -1,5 +1,5 @@
 -- ==========================================================
--- ZUNO ENGINE - TCS (Menu Definitivo via Rayfield Library)
+-- ZUNO ENGINE - TCS (Fluent UI Library Oficial)
 -- ==========================================================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -15,59 +15,62 @@ local Config = {
     FollowSpeed = 24
 }
 
--- Carrega a interface gráfica profissional compatível com Xeno
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- Carrega a Fluent Library de forma totalmente segura
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
-local Window = Rayfield:CreateWindow({
-   Name = "⚡ ZUNO ENGINE - TCS",
-   LoadingTitle = "Zuno Engine",
-   LoadingSubtitle = "por Rafael",
-   ConfigurationSaving = { Enabled = false },
-   KeySystem = false
+local Window = Fluent:CreateWindow({
+    Title = "⚡ ZUNO ENGINE - TCS",
+    SubTitle = "por Rafael",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(480, 360),
+    Acrylic = false,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.Insert
 })
 
-local Tab = Window:CreateTab("Principal", 4483362458)
+local Tabs = {
+    Main = Window:AddTab({ Title = "Principal", Icon = "home" })
+}
 
--- Botão/Toggle: AutoFollow
-Tab:CreateToggle({
-   Name = "AutoFollow",
-   CurrentValue = false,
-   Callback = function(Value)
-      Config.AutoFollow = Value
-   end,
+-- Toggles
+Tabs.Main:AddToggle("AutoFollowToggle", {
+    Title = "AutoFollow",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoFollow = Value
+    end
 })
 
--- Botão/Toggle: AutoBall (Ímã)
-Tab:CreateToggle({
-   Name = "AutoBall (Ímã)",
-   CurrentValue = false,
-   Callback = function(Value)
-      Config.AutoBall = Value
-   end,
+Tabs.Main:AddToggle("AutoBallToggle", {
+    Title = "AutoBall (Ímã)",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoBall = Value
+    end
 })
 
--- Botão/Toggle: Teleport
-Tab:CreateToggle({
-   Name = "Teleport Ball",
-   CurrentValue = false,
-   Callback = function(Value)
-      Config.AutoTeleport = Value
-   end,
+Tabs.Main:AddToggle("TeleportToggle", {
+    Title = "Teleport Ball",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoTeleport = Value
+    end
 })
 
--- ReachBox (Slider para ajustar o Reach em tempo real)
-Tab:CreateSlider({
-   Name = "Alcance do Reach (Studs)",
-   Range = {10, 150},
-   Increment = 5,
-   Suffix = "Studs",
-   CurrentValue = 45,
-   Callback = function(Value)
-      Config.Reach = Value
-   end,
+-- Slider de Reach
+Tabs.Main:AddSlider("ReachSlider", {
+    Title = "Alcance do Reach (Studs)",
+    Description = "Ajusta o raio de alcance das funções",
+    Default = 45,
+    Min = 10,
+    Max = 150,
+    Rounding = 0,
+    Callback = function(Value)
+        Config.Reach = Value
+    end
 })
 
--- Busca da Bola no TCS
+-- Função de busca da bola no TCS
 local function GetBall()
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
@@ -82,7 +85,7 @@ local function GetBall()
     return nil
 end
 
--- Loop Principal das Funções
+-- Loop Principal
 RunService.RenderStepped:Connect(function(dt)
     if not Config.Active then return end
     
@@ -118,4 +121,4 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
-print("🚀 [ZUNO ENGINE] Menu Rayfield Carregado com Sucesso!")
+print("🚀 [ZUNO ENGINE] Fluent UI Carregada com Sucesso!")
