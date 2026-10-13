@@ -1,9 +1,8 @@
--- ZUNO ENGINE - TCS FIX PAINEL & REACH (Xeno)
+-- ZUNO ENGINE - TCS FIX PAINEL DEFINITIVO (Xeno / PC)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
-local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 local ZunoScript = {
@@ -15,18 +14,15 @@ local ZunoScript = {
     FollowSpeed = 25
 }
 
--- Limpeza rigorosa de interfaces antigas
-local function CleanupOldUI()
-    if CoreGui:FindFirstChild("ZunoCoreGui") then
-        CoreGui.ZunoCoreGui:Destroy()
-    end
-    if LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("ZunoCoreGui") then
-        LocalPlayer.PlayerGui.ZunoCoreGui:Destroy()
-    end
-end
-CleanupOldUI()
+-- Procura a pasta do PlayerGui com segurança absoluta
+local PlayerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui", 5)
 
--- Função de busca da bola no TCS
+-- Destrói instâncias antigas para não travar a injeção
+if PlayerGui and PlayerGui:FindFirstChild("ZunoTcsGui") then
+    PlayerGui.ZunoTcsGui:Destroy()
+end
+
+-- Busca avançada da bola no TCS
 local function FindBall()
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
@@ -41,36 +37,40 @@ local function FindBall()
     return nil
 end
 
--- Criação da Interface Ultracompatível
+-- Criando ScreenGui no PlayerGui com proteção de nome
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZunoCoreGui"
+ScreenGui.Name = "ZunoTcsGui"
 ScreenGui.ResetOnSpawn = false
 
-local success = pcall(function()
-    ScreenGui.Parent = CoreGui
-end)
-
-if not success or not ScreenGui.Parent then
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui", 5)
+-- Suporte a Synapse/Xeno ProtectGui se existir
+if syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Parent = game:GetService("CoreGui")
+elseif gethui then
+    ScreenGui.Parent = gethui()
+else
+    ScreenGui.Parent = PlayerGui
 end
 
+-- Janela Principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 240, 0, 330)
-MainFrame.Position = UDim2.new(0.08, 0, 0.25, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+MainFrame.Size = UDim2.new(0, 250, 0, 340)
+MainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 8)
+Corner.CornerRadius = UDim.new(0, 10)
 Corner.Parent = MainFrame
 
+-- Título do Menu
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 38)
-Title.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 Title.Text = "⚡ ZUNO ENGINE - TCS FIX"
 Title.TextColor3 = Color3.fromRGB(0, 230, 255)
 Title.TextSize = 14
@@ -78,58 +78,47 @@ Title.Font = Enum.Font.SourceSansBold
 Title.Parent = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 8)
+TitleCorner.CornerRadius = UDim.new(0, 10)
 TitleCorner.Parent = Title
 
--- Botão AutoFollow
-local BtnFollow = Instance.new("TextButton")
-BtnFollow.Size = UDim2.new(0.9, 0, 0, 30)
-BtnFollow.Position = UDim2.new(0.05, 0, 0.15, 0)
-BtnFollow.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-BtnFollow.Text = "AutoFollow: DESLIGADO"
-BtnFollow.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnFollow.Font = Enum.Font.SourceSansBold
-BtnFollow.TextSize = 13
-BtnFollow.Parent = MainFrame
+-- Função auxiliar para criar botões
+local function CreateButton(text, pos, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.9, 0, 0, 32)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+    btn.Text = text .. ": DESLIGADO"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 13
+    btn.Parent = MainFrame
 
-BtnFollow.MouseButton1Click:Connect(function()
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        local state = callback()
+        btn.BackgroundColor3 = state and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
+        btn.Text = text .. ": " .. (state and "LIGADO" or "DESLIGADO")
+    end)
+    return btn
+end
+
+-- Botões do Painel
+CreateButton("AutoFollow", UDim2.new(0.05, 0, 0.15, 0), function()
     ZunoScript.AutoFollow = not ZunoScript.AutoFollow
-    BtnFollow.BackgroundColor3 = ZunoScript.AutoFollow and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
-    BtnFollow.Text = "AutoFollow: " .. (ZunoScript.AutoFollow and "LIGADO" or "DESLIGADO")
+    return ZunoScript.AutoFollow
 end)
 
--- Botão AutoBall
-local BtnBall = Instance.new("TextButton")
-BtnBall.Size = UDim2.new(0.9, 0, 0, 30)
-BtnBall.Position = UDim2.new(0.05, 0, 0.27, 0)
-BtnBall.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-BtnBall.Text = "AutoBall (Ímã): DESLIGADO"
-BtnBall.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnBall.Font = Enum.Font.SourceSansBold
-BtnBall.TextSize = 13
-BtnBall.Parent = MainFrame
-
-BtnBall.MouseButton1Click:Connect(function()
+CreateButton("AutoBall (Ímã)", UDim2.new(0.05, 0, 0.27, 0), function()
     ZunoScript.AutoBall = not ZunoScript.AutoBall
-    BtnBall.BackgroundColor3 = ZunoScript.AutoBall and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
-    BtnBall.Text = "AutoBall (Ímã): " .. (ZunoScript.AutoBall and "LIGADO" or "DESLIGADO")
+    return ZunoScript.AutoBall
 end)
 
--- Botão Teleport
-local BtnTeleport = Instance.new("TextButton")
-BtnTeleport.Size = UDim2.new(0.9, 0, 0, 30)
-BtnTeleport.Position = UDim2.new(0.05, 0, 0.39, 0)
-BtnTeleport.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-BtnTeleport.Text = "Teleport Ball: DESLIGADO"
-BtnTeleport.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnTeleport.Font = Enum.Font.SourceSansBold
-BtnTeleport.TextSize = 13
-BtnTeleport.Parent = MainFrame
-
-BtnTeleport.MouseButton1Click:Connect(function()
+CreateButton("Teleport Ball", UDim2.new(0.05, 0, 0.39, 0), function()
     ZunoScript.AutoTeleport = not ZunoScript.AutoTeleport
-    BtnTeleport.BackgroundColor3 = ZunoScript.AutoTeleport and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
-    BtnTeleport.Text = "Teleport Ball: " .. (ZunoScript.AutoTeleport and "LIGADO" or "DESLIGADO")
+    return ZunoScript.AutoTeleport
 end)
 
 -- Reach Label
@@ -143,16 +132,20 @@ ReachLabel.Font = Enum.Font.SourceSansBold
 ReachLabel.TextSize = 13
 ReachLabel.Parent = MainFrame
 
--- Caixa de Texto do Reach
+-- ReachBox (Entrada de Texto do Reach)
 local ReachBox = Instance.new("TextBox")
 ReachBox.Size = UDim2.new(0.9, 0, 0, 28)
 ReachBox.Position = UDim2.new(0.05, 0, 0.60, 0)
-ReachBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+ReachBox.BackgroundColor3 = Color3.fromRGB(35, 35, 48)
 ReachBox.Text = tostring(ZunoScript.Reach)
 ReachBox.TextColor3 = Color3.fromRGB(0, 230, 255)
 ReachBox.Font = Enum.Font.SourceSansBold
 ReachBox.TextSize = 14
 ReachBox.Parent = MainFrame
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 6)
+BoxCorner.Parent = ReachBox
 
 ReachBox.FocusLost:Connect(function()
     local val = tonumber(ReachBox.Text)
@@ -164,11 +157,11 @@ ReachBox.FocusLost:Connect(function()
     end
 end)
 
--- Status da Distância em Tempo Real
+-- Status da Bola
 local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 30)
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 28)
 StatusLabel.Position = UDim2.new(0.05, 0, 0.72, 0)
-StatusLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+StatusLabel.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
 StatusLabel.Text = "A procurar bola..."
 StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
 StatusLabel.Font = Enum.Font.SourceSans
@@ -179,16 +172,7 @@ local StatusCorner = Instance.new("UICorner")
 StatusCorner.CornerRadius = UDim.new(0, 6)
 StatusCorner.Parent = StatusLabel
 
-local HelpLabel = Instance.new("TextLabel")
-HelpLabel.Size = UDim2.new(0.9, 0, 0, 20)
-HelpLabel.Position = UDim2.new(0.05, 0, 0.89, 0)
-HelpLabel.BackgroundTransparency = 1
-HelpLabel.Text = "Pressiona 'INSERT' para Fechar/Abrir"
-HelpLabel.TextColor3 = Color3.fromRGB(130, 130, 150)
-HelpLabel.Font = Enum.Font.SourceSansItalic
-HelpLabel.TextSize = 11
-HelpLabel.Parent = MainFrame
-
+-- Tecla INSERT para Esconder/Mostrar Menu
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
         MainFrame.Visible = not MainFrame.Visible
@@ -197,38 +181,3 @@ end)
 
 -- Loop principal
 RunService.RenderStepped:Connect(function(dt)
-    if not ZunoScript.Active then return end
-    
-    local character = LocalPlayer.Character
-    if not character then return end
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-    
-    local ball = FindBall()
-    if ball then
-        local distance = (ball.Position - rootPart.Position).Magnitude
-        StatusLabel.Text = string.Format("Distância à Bola: %.1f Studs", distance)
-        
-        if distance <= ZunoScript.Reach then
-            if ZunoScript.AutoFollow and not ZunoScript.AutoTeleport then
-                local targetPos = Vector3.new(ball.Position.X, rootPart.Position.Y, ball.Position.Z)
-                rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(rootPart.Position, targetPos) + (ball.Position - rootPart.Position).Unit * math.min(distance, ZunoScript.FollowSpeed * dt), 0.25)
-            end
-
-            if ZunoScript.AutoTeleport then
-                rootPart.CFrame = ball.CFrame * CFrame.new(0, 3, 0)
-            end
-            
-            if ZunoScript.AutoBall then
-                pcall(function()
-                    ball.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2.5)
-                    ball.AssemblyLinearVelocity = Vector3.new(0, 10, 0)
-                end)
-            end
-        end
-    else
-        StatusLabel.Text = "Bola não encontrada!"
-    end
-end)
-
-print("🚀 [ZUNO ENGINE] Painel Restaurado com Sucesso!")
