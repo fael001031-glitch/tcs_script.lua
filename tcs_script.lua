@@ -1,4 +1,4 @@
--- ZUNO ENGINE - TCS (The Classic Soccer) Compatível com Xeno
+-- ZUNO ENGINE - TCS Correção de Física e Bola (Xeno)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -8,51 +8,37 @@ local LocalPlayer = Players.LocalPlayer
 
 local ZunoScript = {
     Active = true,
-    Reach = 20,
+    Reach = 25,
     AutoFollow = false,
     AutoBall = false,
     AutoTeleport = false,
-    FollowSpeed = 35
+    FollowSpeed = 40
 }
 
--- Função adaptada para localizar a bola especificamente no The Classic Soccer (TCS)
+-- Função de busca ultrarrobusta para encontrar a bola no TCS
 local function FindBall()
-    -- Procura direta no Workspace (muito comum no TCS)
-    for _, obj in ipairs(Workspace:GetChildren()) do
-        if obj:IsA("BasePart") and (obj.Name:lower():find("ball") or obj.Name:lower():find("bola") or obj.Name:lower() == "matchball") then
-            return obj
-        end
-    end
-    
-    -- Procura em pastas comuns de partidas no TCS
-    local foldersToSearch = {"Ball", "Balls", "Match", "Matches", "Workspace.Ball", "GameObjects"}
-    for _, folderName in ipairs(foldersToSearch) do
-        local folder = Workspace:FindFirstChild(folderName)
-        if folder then
-            for _, obj in ipairs(folder:GetDescendants()) do
-                if obj:IsA("BasePart") and (obj.Name:lower():find("ball") or obj.Name:lower():find("bola") or obj.Name:lower() == "matchball") then
+    -- Procura por qualquer parte redonda ou com nome parecido com bola/ball no Workspace inteiro
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            local name = obj.Name:lower()
+            -- Verifica nomes comuns ou se o tamanho indica uma bola de futebol padrão do Roblox
+            if name:find("ball") or name:find("bola") or name:find("sph") or (obj.Size.X <= 3 and obj.Size.Y <= 3 and obj.Shape == Enum.PartType.Ball) then
+                -- Garante que não é a cabeça de um jogador
+                if not obj.Parent:FindFirstChild("Humanoid") then
                     return obj
                 end
             end
         end
     end
-    
-    -- Fallback geral caso a bola esteja escondida
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and (obj.Name:lower() == "ball" or obj.Name:lower() == "matchball") then
-            return obj
-        end
-    end
-    
     return nil
 end
 
--- Destrói menus antigos para não sobrepor
+-- Destrói menus antigos
 if CoreGui:FindFirstChild("ZunoCoreGui") then
     CoreGui.ZunoCoreGui:Destroy()
 end
 
--- Criando a Interface no CoreGui (Injetado com sucesso no Xeno)
+-- Interface no CoreGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ZunoCoreGui"
 ScreenGui.ResetOnSpawn = false
@@ -64,7 +50,6 @@ if not ScreenGui.Parent then
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Janela Principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 240, 0, 310)
@@ -79,11 +64,10 @@ local Corner = Instance.new("UICorner")
 Corner.CornerRadius = UDim.new(0, 8)
 Corner.Parent = MainFrame
 
--- Barra de Título
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 38)
 Title.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
-Title.Text = "⚡ ZUNO ENGINE - TCS v2.0"
+Title.Text = "⚡ ZUNO ENGINE - TCS FIX"
 Title.TextColor3 = Color3.fromRGB(0, 230, 255)
 Title.TextSize = 15
 Title.Font = Enum.Font.SourceSansBold
@@ -93,7 +77,7 @@ local TitleCorner = Instance.new("UICorner")
 TitleCorner.CornerRadius = UDim.new(0, 8)
 TitleCorner.Parent = Title
 
--- Botão: AutoFollow
+-- Botão AutoFollow
 local BtnFollow = Instance.new("TextButton")
 BtnFollow.Size = UDim2.new(0.9, 0, 0, 32)
 BtnFollow.Position = UDim2.new(0.05, 0, 0.16, 0)
@@ -106,21 +90,16 @@ BtnFollow.Parent = MainFrame
 
 BtnFollow.MouseButton1Click:Connect(function()
     ZunoScript.AutoFollow = not ZunoScript.AutoFollow
-    if ZunoScript.AutoFollow then
-        BtnFollow.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
-        BtnFollow.Text = "AutoFollow: LIGADO"
-    else
-        BtnFollow.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-        BtnFollow.Text = "AutoFollow: DESLIGADO"
-    end
+    BtnFollow.BackgroundColor3 = ZunoScript.AutoFollow and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
+    BtnFollow.Text = "AutoFollow: " .. (ZunoScript.AutoFollow and "LIGADO" or "DESLIGADO")
 end)
 
--- Botão: AutoBall
+-- Botão AutoBall (Domínio / Ímã)
 local BtnBall = Instance.new("TextButton")
 BtnBall.Size = UDim2.new(0.9, 0, 0, 32)
 BtnBall.Position = UDim2.new(0.05, 0, 0.29, 0)
 BtnBall.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-BtnBall.Text = "AutoBall: DESLIGADO"
+BtnBall.Text = "AutoBall (Ímã): DESLIGADO"
 BtnBall.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnBall.Font = Enum.Font.SourceSansBold
 BtnBall.TextSize = 13
@@ -128,16 +107,11 @@ BtnBall.Parent = MainFrame
 
 BtnBall.MouseButton1Click:Connect(function()
     ZunoScript.AutoBall = not ZunoScript.AutoBall
-    if ZunoScript.AutoBall then
-        BtnBall.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
-        BtnBall.Text = "AutoBall: LIGADO"
-    else
-        BtnBall.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-        BtnBall.Text = "AutoBall: DESLIGADO"
-    end
+    BtnBall.BackgroundColor3 = ZunoScript.AutoBall and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
+    BtnBall.Text = "AutoBall (Ímã): " .. (ZunoScript.AutoBall and "LIGADO" or "DESLIGADO")
 end)
 
--- Botão: Teleport
+-- Botão Teleport
 local BtnTeleport = Instance.new("TextButton")
 BtnTeleport.Size = UDim2.new(0.9, 0, 0, 32)
 BtnTeleport.Position = UDim2.new(0.05, 0, 0.42, 0)
@@ -150,16 +124,11 @@ BtnTeleport.Parent = MainFrame
 
 BtnTeleport.MouseButton1Click:Connect(function()
     ZunoScript.AutoTeleport = not ZunoScript.AutoTeleport
-    if ZunoScript.AutoTeleport then
-        BtnTeleport.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
-        BtnTeleport.Text = "Teleport Ball: LIGADO"
-    else
-        BtnTeleport.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-        BtnTeleport.Text = "Teleport Ball: DESLIGADO"
-    end
+    BtnTeleport.BackgroundColor3 = ZunoScript.AutoTeleport and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
+    BtnTeleport.Text = "Teleport Ball: " .. (ZunoScript.AutoTeleport and "LIGADO" or "DESLIGADO")
 end)
 
--- Ajuste de Reach (Input de Texto)
+-- Reach Input
 local ReachLabel = Instance.new("TextLabel")
 ReachLabel.Size = UDim2.new(0.9, 0, 0, 20)
 ReachLabel.Position = UDim2.new(0.05, 0, 0.56, 0)
@@ -182,32 +151,26 @@ ReachBox.Parent = MainFrame
 
 ReachBox.FocusLost:Connect(function()
     local val = tonumber(ReachBox.Text)
-    if val then
-        ZunoScript.Reach = val
-    else
-        ReachBox.Text = tostring(ZunoScript.Reach)
-    end
+    if val then ZunoScript.Reach = val else ReachBox.Text = tostring(ZunoScript.Reach) end
 end)
 
--- Texto de Ajuda/Atalho
 local HelpLabel = Instance.new("TextLabel")
 HelpLabel.Size = UDim2.new(0.9, 0, 0, 25)
 HelpLabel.Position = UDim2.new(0.05, 0, 0.88, 0)
 HelpLabel.BackgroundTransparency = 1
-HelpLabel.Text = "Pressiona 'INSERT' para Abrir/Fechar"
+HelpLabel.Text = "Pressiona 'INSERT' para Fechar"
 HelpLabel.TextColor3 = Color3.fromRGB(130, 130, 150)
 HelpLabel.Font = Enum.Font.SourceSansItalic
 HelpLabel.TextSize = 12
 HelpLabel.Parent = MainFrame
 
--- Abrir e Fechar o Menu com a tecla INSERT
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
         MainFrame.Visible = not MainFrame.Visible
     end
 end)
 
--- Loop principal otimizado para TCS
+-- Loop principal atualizado
 RunService.RenderStepped:Connect(function(dt)
     if not ZunoScript.Active then return end
     
@@ -221,20 +184,26 @@ RunService.RenderStepped:Connect(function(dt)
         local distance = (ball.Position - rootPart.Position).Magnitude
         
         if distance <= ZunoScript.Reach then
+            -- AutoFollow: Move o jogador em direção à bola
             if ZunoScript.AutoFollow and not ZunoScript.AutoTeleport then
                 local targetPos = Vector3.new(ball.Position.X, rootPart.Position.Y, ball.Position.Z)
-                rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(rootPart.Position, targetPos) + (ball.Position - rootPart.Position).Unit * math.min(distance, ZunoScript.FollowSpeed * dt), 0.3)
+                rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(rootPart.Position, targetPos) + (ball.Position - rootPart.Position).Unit * math.min(distance, ZunoScript.FollowSpeed * dt), 0.4)
             end
 
+            -- Teleport Ball: Teleporta o jogador para cima da bola
             if ZunoScript.AutoTeleport then
-                rootPart.CFrame = ball.CFrame * CFrame.new(0, 2, 0)
+                rootPart.CFrame = ball.CFrame * CFrame.new(0, 3, 0)
             end
             
-            if ZunoScript.AutoBall and ball:IsA("BasePart") then
-                ball.AssemblyLinearVelocity = Vector3.new(0, 50, 0)
+            -- AutoBall (Ímã): Puxa a bola diretamente para os pés do jogador para domínio total
+            if ZunoScript.AutoBall then
+                pcall(function()
+                    ball.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2)
+                    ball.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                end)
             end
         end
     end
 end)
 
-print("🚀 [ZUNO ENGINE] TCS Carregado com Sucesso!")
+print("🚀 [ZUNO ENGINE] TCS Fix Carregado!")
