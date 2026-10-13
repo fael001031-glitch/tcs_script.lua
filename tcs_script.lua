@@ -1,4 +1,4 @@
--- ZUNO ENGINE - TCS (The Classic Soccer)
+-- ZUNO ENGINE - TCS (The Classic Soccer) Compatível com Xeno
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -8,21 +8,23 @@ local LocalPlayer = Players.LocalPlayer
 
 local ZunoScript = {
     Active = true,
-    Reach = 45,             -- Reach ajustado para 45
+    Reach = 45,                 -- Ajustado para 45
     AutoFollow = false,
     AutoBall = false,
     AutoTeleport = false,
-    FollowSpeed = 22        -- Velocidade do AutoFollow ajustada
+    FollowSpeed = 22            -- AutoFollow ajustado
 }
 
 -- Função adaptada para localizar a bola especificamente no The Classic Soccer (TCS)
 local function FindBall()
+    -- Procura direta no Workspace (muito comum no TCS)
     for _, obj in ipairs(Workspace:GetChildren()) do
         if obj:IsA("BasePart") and (obj.Name:lower():find("ball") or obj.Name:lower():find("bola") or obj.Name:lower() == "matchball") then
             return obj
         end
     end
     
+    -- Procura em pastas comuns de partidas no TCS
     local foldersToSearch = {"Ball", "Balls", "Match", "Matches", "Workspace.Ball", "GameObjects"}
     for _, folderName in ipairs(foldersToSearch) do
         local folder = Workspace:FindFirstChild(folderName)
@@ -35,6 +37,7 @@ local function FindBall()
         end
     end
     
+    -- Fallback geral caso a bola esteja escondida
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") and (obj.Name:lower() == "ball" or obj.Name:lower() == "matchball") then
             return obj
@@ -49,7 +52,7 @@ if CoreGui:FindFirstChild("ZunoCoreGui") then
     CoreGui.ZunoCoreGui:Destroy()
 end
 
--- Criando a Interface no CoreGui
+-- Criando a Interface no CoreGui (Injetado com sucesso no Xeno)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ZunoCoreGui"
 ScreenGui.ResetOnSpawn = false
@@ -192,4 +195,52 @@ HelpLabel.Size = UDim2.new(0.9, 0, 0, 25)
 HelpLabel.Position = UDim2.new(0.05, 0, 0.88, 0)
 HelpLabel.BackgroundTransparency = 1
 HelpLabel.Text = "Pressiona 'INSERT' para Abrir/Fechar"
-HelpLabel.TextColor3 = Color3.fromRGB(13
+HelpLabel.TextColor3 = Color3.fromRGB(130, 130, 150)
+HelpLabel.Font = Enum.Font.SourceSansItalic
+HelpLabel.TextSize = 12
+HelpLabel.Parent = MainFrame
+
+-- Abrir e Fechar o Menu com a tecla INSERT
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+-- Loop principal otimizado para TCS
+RunService.RenderStepped:Connect(function(dt)
+    if not ZunoScript.Active then return end
+    
+    local character = LocalPlayer.Character
+    if not character then return end
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    local ball = FindBall()
+    if ball then
+        local distance = (ball.Position - rootPart.Position).Magnitude
+        
+        if distance <= ZunoScript.Reach then
+            -- AutoFollow Suave
+            if ZunoScript.AutoFollow and not ZunoScript.AutoTeleport then
+                local targetPos = Vector3.new(ball.Position.X, rootPart.Position.Y, ball.Position.Z)
+                rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(rootPart.Position, targetPos) + (ball.Position - rootPart.Position).Unit * math.min(distance, ZunoScript.FollowSpeed * dt), 0.25)
+            end
+
+            -- Teleport Corrigido para a Bola
+            if ZunoScript.AutoTeleport then
+                rootPart.CFrame = ball.CFrame + Vector3.new(0, 3, 0)
+            end
+            
+            -- AutoBall (Ímã reduzido e estável)
+            if ZunoScript.AutoBall and ball:IsA("BasePart") then
+                pcall(function()
+                    ball.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2.5)
+                    ball.AssemblyLinearVelocity = Vector3.new(0, 10, 0)
+                end)
+            end
+        end
+    end
+end)
+
+print("🚀 [ZUNO ENGINE] TCS Carregado com Sucesso!")
