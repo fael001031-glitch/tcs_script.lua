@@ -1,4 +1,4 @@
--- ZUNO ENGINE - TCS (The Classic Soccer) Otimizado e Ajustado
+-- ZUNO ENGINE - TCS (The Classic Soccer)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -8,11 +8,11 @@ local LocalPlayer = Players.LocalPlayer
 
 local ZunoScript = {
     Active = true,
-    Reach = 45,             -- Reach aumentado para 45
+    Reach = 45,             -- Reach ajustado para 45
     AutoFollow = false,
     AutoBall = false,
     AutoTeleport = false,
-    FollowSpeed = 22        -- Velocidade do AutoFollow levemente reduzida para estabilidade
+    FollowSpeed = 22        -- Velocidade do AutoFollow ajustada
 }
 
 -- Função adaptada para localizar a bola especificamente no The Classic Soccer (TCS)
@@ -80,7 +80,7 @@ Corner.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 38)
 Title.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
-Title.Text = "⚡ ZUNO ENGINE - TCS v2.1"
+Title.Text = "⚡ ZUNO ENGINE - TCS v2.0"
 Title.TextColor3 = Color3.fromRGB(0, 230, 255)
 Title.TextSize = 15
 Title.Font = Enum.Font.SourceSansBold
@@ -191,52 +191,5 @@ local HelpLabel = Instance.new("TextLabel")
 HelpLabel.Size = UDim2.new(0.9, 0, 0, 25)
 HelpLabel.Position = UDim2.new(0.05, 0, 0.88, 0)
 HelpLabel.BackgroundTransparency = 1
-HelpLabel.Text = "Pressione 'INSERT' para Abrir/Fechar"
-HelpLabel.TextColor3 = Color3.fromRGB(130, 130, 150)
-HelpLabel.Font = Enum.Font.SourceSansItalic
-HelpLabel.TextSize = 12
-HelpLabel.Parent = MainFrame
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
-        MainFrame.Visible = not MainFrame.Visible
-    end
-end)
-
--- Loop principal otimizado e corrigido
-RunService.RenderStepped:Connect(function(dt)
-    if not ZunoScript.Active then return end
-    
-    local character = LocalPlayer.Character
-    if not character then return end
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-    
-    local ball = FindBall()
-    if ball then
-        local distance = (ball.Position - rootPart.Position).Magnitude
-        
-        if distance <= ZunoScript.Reach then
-            -- AutoFollow Suave
-            if ZunoScript.AutoFollow and not ZunoScript.AutoTeleport then
-                local targetPos = Vector3.new(ball.Position.X, rootPart.Position.Y, ball.Position.Z)
-                rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(rootPart.Position, targetPos) + (ball.Position - rootPart.Position).Unit * math.min(distance, ZunoScript.FollowSpeed * dt), 0.25)
-            end
-
-            -- Teleport Corrigido para a Bola
-            if ZunoScript.AutoTeleport then
-                rootPart.CFrame = ball.CFrame + Vector3.new(0, 3, 0)
-            end
-            
-            -- AutoBall (Ímã reduzido e estável)
-            if ZunoScript.AutoBall and ball:IsA("BasePart") then
-                pcall(function()
-                    ball.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2.5)
-                    ball.AssemblyLinearVelocity = Vector3.new(0, 15, 0)
-                end)
-            end
-        end
-    end
-end)
-
-print("🚀 [ZUNO ENGINE] TCS Atualizado com Sucesso!")
+HelpLabel.Text = "Pressiona 'INSERT' para Abrir/Fechar"
+HelpLabel.TextColor3 = Color3.fromRGB(13
