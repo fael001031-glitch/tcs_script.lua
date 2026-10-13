@@ -1,21 +1,13 @@
 -- ==========================================================
--- ZUNO ENGINE - TCS ULTIMATE (Painel Otimizado)
+-- ZUNO ENGINE - TCS ULTIMATE (Versão Especial para XENO)
 -- ==========================================================
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
-local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
--- Tenta pegar o PlayerGui com segurança
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
-if not PlayerGui then
-    warn("⚡ [ZUNO] PlayerGui não encontrado!")
-    return
-end
-
--- Configurações das Funções
+-- Configurações
 local Config = {
     Active = true,
     Reach = 45,
@@ -25,15 +17,58 @@ local Config = {
     FollowSpeed = 22
 }
 
--- 1. Destrói qualquer versão antiga do menu
-if PlayerGui:FindFirstChild("ZunoTcsMainGui") then
-    PlayerGui.ZunoTcsMainGui:Destroy()
-end
-if CoreGui:FindFirstChild("ZunoTcsMainGui") then
-    CoreGui.ZunoTcsMainGui:Destroy()
-end
+-- 1. Janela Principal (Orion GUI - Roda liso no Xeno)
+local Window = OrionLib:MakeWindow({
+    Name = "⚡ ZUNO ENGINE - TCS",
+    HidePremium = true,
+    SaveConfig = false,
+    ConfigFolder = "ZunoTCS"
+})
 
--- 2. Função de busca da bola no TCS
+local Tab = Window:MakeTab({
+    Name = "Automações",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+-- 2. Toggles e Controles
+Tab:AddToggle({
+    Name = "AutoFollow (Seguir Bola)",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoFollow = Value
+    end    
+})
+
+Tab:AddToggle({
+    Name = "AutoBall (Ímã na Bola)",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoBall = Value
+    end    
+})
+
+Tab:AddToggle({
+    Name = "Teleport Ball (Teleportar)",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoTeleport = Value
+    end    
+})
+
+Tab:AddTextbox({
+    Name = "Alcance do Reach (Studs)",
+    Default = "45",
+    TextDisappear = false,
+    Callback = function(Value)
+        local val = tonumber(Value)
+        if val then
+            Config.Reach = val
+        end
+    end
+})
+
+-- 3. Função de busca da bola
 local function GetBall()
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
@@ -48,133 +83,7 @@ local function GetBall()
     return nil
 end
 
--- 3. Criação da Interface Gráfica
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ZunoTcsMainGui"
-ScreenGui.ResetOnSpawn = false
--- Tenta injetar no CoreGui para burlar proteções do jogo (se o executor suportar), senão vai pro PlayerGui
-local success = pcall(function()
-    ScreenGui.Parent = CoreGui
-end)
-if not success then
-    ScreenGui.Parent = PlayerGui
-end
-
--- Janela Principal (Centralizada para garantir que apareça)
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 240, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -120, 0.4, -160)
-MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Visible = true
-MainFrame.Parent = ScreenGui
-
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 8)
-Corner.Parent = MainFrame
-
--- Título do Menu
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 38)
-Title.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
-Title.Text = "⚡ ZUNO ENGINE - TCS"
-Title.TextColor3 = Color3.fromRGB(0, 230, 255)
-Title.TextSize = 14
-Title.Font = Enum.Font.SourceSansBold
-Title.Parent = MainFrame
-
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 8)
-TitleCorner.Parent = Title
-
--- Criador de Botões
-local function CreateButton(text, posY, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.9, 0, 0, 32)
-    btn.Position = UDim2.new(0.05, 0, posY, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-    btn.Text = text .. ": DESLIGADO"
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 13
-    btn.Parent = MainFrame
-
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
-    btnCorner.Parent = btn
-
-    local state = false
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        callback(state)
-        btn.BackgroundColor3 = state and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(180, 40, 40)
-        btn.Text = text .. ": " .. (state and "LIGADO" or "DESLIGADO")
-    end)
-    return btn
-end
-
--- Botões do Painel
-CreateButton("AutoFollow", 0.15, function(state) Config.AutoFollow = state end)
-CreateButton("AutoBall (Ímã)", 0.28, function(state) Config.AutoBall = state end)
-CreateButton("Teleport Ball", 0.41, function(state) Config.AutoTeleport = state end)
-
--- Reach Label
-local ReachLabel = Instance.new("TextLabel")
-ReachLabel.Size = UDim2.new(0.9, 0, 0, 20)
-ReachLabel.Position = UDim2.new(0.05, 0, 0.55, 0)
-ReachLabel.BackgroundTransparency = 1
-ReachLabel.Text = "Alcance do Reach (Studs):"
-ReachLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-ReachLabel.Font = Enum.Font.SourceSans
-ReachLabel.TextSize = 13
-ReachLabel.Parent = MainFrame
-
--- ReachBox
-local ReachBox = Instance.new("TextBox")
-ReachBox.Size = UDim2.new(0.9, 0, 0, 28)
-ReachBox.Position = UDim2.new(0.05, 0, 0.63, 0)
-ReachBox.BackgroundColor3 = Color3.fromRGB(32, 32, 44)
-ReachBox.Text = tostring(Config.Reach)
-ReachBox.TextColor3 = Color3.fromRGB(0, 230, 255)
-ReachBox.Font = Enum.Font.SourceSansBold
-ReachBox.TextSize = 14
-ReachBox.Parent = MainFrame
-
-local BoxCorner = Instance.new("UICorner")
-BoxCorner.CornerRadius = UDim.new(0, 6)
-BoxCorner.Parent = ReachBox
-
-ReachBox.FocusLost:Connect(function()
-    local val = tonumber(ReachBox.Text)
-    if val then
-        Config.Reach = val
-        print("⚡ [ZUNO] Reach ajustado para:", val)
-    else
-        ReachBox.Text = tostring(Config.Reach)
-    end
-end)
-
--- Tecla de Atalho INSERT
-local HelpLabel = Instance.new("TextLabel")
-HelpLabel.Size = UDim2.new(0.9, 0, 0, 25)
-HelpLabel.Position = UDim2.new(0.05, 0, 0.88, 0)
-HelpLabel.BackgroundTransparency = 1
-HelpLabel.Text = "Pressione 'INSERT' para Fechar/Abrir"
-HelpLabel.TextColor3 = Color3.fromRGB(130, 130, 150)
-HelpLabel.Font = Enum.Font.SourceSansItalic
-HelpLabel.TextSize = 12
-HelpLabel.Parent = MainFrame
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
-        MainFrame.Visible = not MainFrame.Visible
-    end
-end)
-
--- 4. Loop Principal de Execução das Automações
+-- 4. Loop de Execução
 RunService.RenderStepped:Connect(function(dt)
     if not Config.Active then return end
     
@@ -188,15 +97,18 @@ RunService.RenderStepped:Connect(function(dt)
         local distance = (ball.Position - rootPart.Position).Magnitude
         
         if distance <= Config.Reach then
+            -- AutoFollow
             if Config.AutoFollow and not Config.AutoTeleport then
                 local targetPos = Vector3.new(ball.Position.X, rootPart.Position.Y, ball.Position.Z)
                 rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(rootPart.Position, targetPos) + (ball.Position - rootPart.Position).Unit * math.min(distance, Config.FollowSpeed * dt), 0.25)
             end
 
+            -- Teleport Ball
             if Config.AutoTeleport then
                 rootPart.CFrame = ball.CFrame * CFrame.new(0, 3, 0)
             end
             
+            -- Ímã / AutoBall
             if Config.AutoBall then
                 pcall(function()
                     ball.CFrame = rootPart.CFrame * CFrame.new(0, 0, -2.5)
@@ -207,4 +119,4 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
-print("🚀 [ZUNO ENGINE] Injetado com Sucesso e Menu Centralizado!")
+OrionLib:Init()
